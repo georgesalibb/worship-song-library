@@ -1,33 +1,87 @@
-import { StyleSheet } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { View, Text, ScrollView, Pressable } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
-import { getSongById } from "@/source/data/songRepo";
 
+import { Colors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { getSongById } from "@/source/data/songRepo";
+import { getFavourites, pushRecent, toggleFavourite } from "@/source/data/userState";
 
 export default function SongDetailsScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const song = getSongById(String(id));
+  const scheme = useColorScheme();
+  const c = Colors[scheme ?? "light"];
 
-  if (!song) {
-    return (
-      <ThemedView style={styles.container}>
-        <ThemedText type="title">Song not found</ThemedText>
-      </ThemedView>
-    );
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const songId = useMemo(
+    () => (typeof id === "string" ? decodeURIComponent(id) : ""),
+    [id]
+  );
+
+  const song = getSongById(songId);
+
+  const [favs, setFavs] = useState<string[]>([]);
+  const isFav = favs.includes(songId);
+
+  useEffect(() => {
+    (async () => {
+      const current = await getFavourites();
+      setFavs(current);
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!songId) return;
+    // mark as recent when opened
+    pushRecent(songId).catch(() => {});
+  }, [songId]);
+
+  async function onToggleFav() {
+    if (!songId) return;
+    const next = await toggleFavourite(songId);
+    setFavs(next);
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="title">{song.title}</ThemedText>
-      <ThemedText style={styles.meta}>{song.language}</ThemedText>
-      <ThemedText style={styles.lyrics}>{song.lyrics}</ThemedText>
-    </ThemedView>
+    <SafeAreaView style={{ flex: 1, backgroundColor: c.background }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+        {!song ? (
+          <Text style={{ color: c.text }}>Song not found.</Text>
+        ) : (
+          <View style={{ gap: 12 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <Text style={{ flex: 1, fontSize: 24, fontWeight: "800", color: c.text }}>
+                {song.title}
+              </Text>
+
+              <Pressable
+                onPress={onToggleFav}
+                style={({ pressed }) => ({
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: "#E5E5EA",
+                  backgroundColor: "#FFFFFF",
+                  opacity: pressed ? 0.7 : 1,
+                })}
+              >
+                <Text style={{ color: isFav ? c.tint : c.tabIconDefault, fontWeight: "700" }}>
+                  {isFav ? "♥" : "♡"}
+                </Text>
+              </Pressable>
+            </View>
+
+            <Text style={{ color: c.tabIconDefault }}>
+              {song.language ?? "English"}
+            </Text>
+
+            <Text style={{ fontSize: 16, lineHeight: 24, color: c.text }}>
+              {song.lyrics}
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, paddingTop: 60 },
-  meta: { marginTop: 6, opacity: 0.7 },
-  lyrics: { marginTop: 16, lineHeight: 22 },
-});

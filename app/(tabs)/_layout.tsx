@@ -62,6 +62,10 @@ export default function TabLayout() {
           ),
         }}
       />
+
+      {/* ✅ Hide nested routes under favourites so they don't show as tabs */}
+      <Tabs.Screen name="favourites/[id]" options={{ href: null }} />
+      <Tabs.Screen name="favourites/[id]/add" options={{ href: null }} />
     </Tabs>
   );
 }
