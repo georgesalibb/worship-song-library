@@ -1,0 +1,14 @@
+[
+  {
+    "id": "amazing-grace",
+    "title": "Amazing Grace",
+    "language": "EN",
+    "lyrics": "Amazing grace, how sweet the sound..."
+  },
+  {
+    "id": "kyrie-eleison",
+    "title": "Kyrie Eleison",
+    "language": "COP",
+    "lyrics": "Kyrie eleison..."
+  }
+]
